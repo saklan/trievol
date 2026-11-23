@@ -28,6 +28,10 @@ import { SERVICES_LIST } from "../data/services";
 import { PORTFOLIO_LIST } from "../data/portfolio";
 import { TESTIMONIALS_LIST } from "../data/testimonials";
 import { FAQ_LIST } from "../data/faq";
+import ahmedFarmImage from "../assets/portfolio/ahmed-farm.jpg";
+import firstLaneEducationImage from "../assets/portfolio/first-lane-education.jpg";
+import illustrativeProjectPreview from "../assets/illustrative-project-preview.jpg";
+import yamenTailorsImage from "../assets/portfolio/yamen-tailors.jpg";
 
 export default function Home() {
   // Problem vs Solution toggle state
@@ -329,13 +333,25 @@ export default function Home() {
           </div>
 
           {/* Image Right */}
-          <div className="relative group rounded-2xl overflow-hidden border border-slate-200 shadow-lg order-1 lg:order-2 bg-gradient-to-br from-blue-50 via-slate-50 to-emerald-50 min-h-[320px] md:min-h-[400px]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(37,99,235,0.12),transparent_45%)]"></div>
+          <div className="relative group aspect-[3/2] rounded-2xl overflow-hidden border border-slate-200 shadow-lg order-1 lg:order-2">
+            <img
+              src={illustrativeProjectPreview}
+              alt="Illustrative stock workspace photo showing the Yamen Tailors & Garments website from Trievol's portfolio on a laptop"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
             <div className="absolute bottom-4 left-4 right-4 bg-white/95 border border-slate-200 p-4 rounded-xl backdrop-blur-sm">
               <p className="text-[11px] font-mono text-emerald-600 font-bold uppercase tracking-wider flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> The Trievol Standard
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Illustrative portfolio preview
               </p>
-              <p className="text-xs text-slate-700 mt-1">Clear layouts and useful content aligned with the client's requirements.</p>
+              <p className="text-xs text-slate-700 mt-1">Yamen Tailors & Garments, shown in a stock workspace photo.</p>
+              <a
+                href="https://www.pexels.com/photo/person-holding-a-cup-of-coffee-beside-macbook-461073/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 inline-block text-[10px] text-slate-500 underline decoration-slate-300 underline-offset-2 hover:text-blue-600"
+              >
+                Photo by Pixabay on Pexels
+              </a>
             </div>
           </div>
         </div>
@@ -360,7 +376,8 @@ export default function Home() {
                 title: "Website Design & Development",
                 description: "We plan and deliver websites using the platform and tools that fit the agreed requirements, including WordPress and custom web development.",
                 icon: <Monitor className="w-5 h-5 text-blue-600" />,
-                image: "",
+                image: yamenTailorsImage,
+                imageAlt: "Yamen Tailors & Garments website from the Trievol portfolio",
                 benefits: ["Bespoke layout architecture", "High-contrast typography", "Optimized mobile viewports"]
               },
               {
@@ -374,21 +391,24 @@ export default function Home() {
                 title: "SEO Optimization",
                 description: "Review website structure, search terms and content opportunities to improve online visibility.",
                 icon: <LineChart className="w-5 h-5 text-emerald-600" />,
-                image: "",
+                image: firstLaneEducationImage,
+                imageAlt: "First Lane Education website from the Trievol portfolio",
                 benefits: ["High-intent search mapping", "Core Web Vital optimization", "Metadata & schema injection"]
               },
               {
                 title: "Website Maintenance & Hosting",
                 description: "Website maintenance, hosting support, content updates, performance review and developer assistance.",
                 icon: <Shield className="w-5 h-5 text-amber-600" />,
-                image: "",
+                image: ahmedFarmImage,
+                imageAlt: "Ahmed Farm website from the Trievol portfolio",
                 benefits: ["Content and website updates", "Hosting and domain assistance", "Performance review"]
               },
               {
                 title: "WordPress Development",
                 description: "WordPress development, content structure and practical support for business websites.",
                 icon: <Code className="w-5 h-5 text-indigo-600" />,
-                image: "",
+                image: yamenTailorsImage,
+                imageAlt: "Yamen Tailors & Garments WordPress website from the Trievol portfolio",
                 benefits: ["WordPress page development", "Content structure", "Practical maintenance support"]
               },
               {
@@ -408,13 +428,18 @@ export default function Home() {
                   {svc.image && (
                     <img
                       src={svc.image}
-                      alt=""
+                      alt={svc.imageAlt}
                       className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-500"
                     />
                   )}
                   <div className="absolute top-3 left-3 w-10 h-10 bg-white/95 rounded-xl border border-slate-200/50 flex items-center justify-center shadow-sm">
                     {svc.icon}
                   </div>
+                  {svc.image && (
+                    <span className="absolute bottom-3 right-3 rounded-full border border-white/80 bg-white/90 px-2 py-1 text-[9px] font-mono font-bold uppercase tracking-wider text-slate-600">
+                      Portfolio example
+                    </span>
+                  )}
                 </div>
 
                 <div className="p-6 flex-1 flex flex-col justify-between">

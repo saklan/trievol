@@ -3,14 +3,15 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
+import nodemailer from "nodemailer";
 
 dotenv.config();
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT || 3000);
 
-  app.use(express.json());
+  app.use(express.json({ limit: "16kb" }));
 
   // Initialize Gemini Client
   const apiKey = process.env.GEMINI_API_KEY;
@@ -23,6 +24,121 @@ async function startServer() {
       headers: {
         'User-Agent': 'aistudio-build',
       }
+    }
+  });
+
+  const gmailUser = process.env.GMAIL_USER?.trim();
+  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD?.replace(/\s/g, "");
+  const mailer = gmailUser && gmailAppPassword
+    ? nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: {
+          user: gmailUser,
+          pass: gmailAppPassword
+        },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 20000
+      })
+    : null;
+
+  app.post("/api/contact", async (req, res) => {
+    const body: unknown = req.body;
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      res.status(400).json({ success: false, error: "Please review the enquiry details and try again." });
+      return;
+    }
+
+    const values = body as Record<string, unknown>;
+    const readField = (key: string, maxLength: number, required = false): string | null => {
+      const rawValue = values[key];
+      if (rawValue === undefined && !required) return "";
+      if (typeof rawValue !== "string") return null;
+
+      const value = rawValue.trim();
+      if (value.length > maxLength || (required && !value)) return null;
+      return value;
+    };
+
+    const name = readField("name", 120, true);
+    const company = readField("company", 160, true);
+    const email = readField("email", 254, true);
+    const phone = readField("phone", 40);
+    const location = readField("location", 120);
+    const selectedService = readField("selectedService", 160, true);
+    const currentUrl = readField("currentUrl", 500);
+    const projectDescription = readField("projectDescription", 5000, true);
+    const selectedGoal = readField("selectedGoal", 200, true);
+    const selectedBudget = readField("selectedBudget", 100, true);
+    const selectedTimeline = readField("selectedTimeline", 100, true);
+    const website = readField("website", 300);
+
+    if (
+      !name || !company || !email || phone === null || location === null ||
+      !selectedService || currentUrl === null || !projectDescription ||
+      !selectedGoal || !selectedBudget || !selectedTimeline || website === null ||
+      website || projectDescription.length < 15 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
+      res.status(400).json({ success: false, error: "Please review the required enquiry details and try again." });
+      return;
+    }
+
+    if (currentUrl) {
+      try {
+        const parsedUrl = new URL(currentUrl);
+        if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+          throw new Error("Unsupported website URL protocol.");
+        }
+      } catch {
+        res.status(400).json({ success: false, error: "Please enter a valid website URL." });
+        return;
+      }
+    }
+
+    if (!mailer || !gmailUser) {
+      res.status(503).json({
+        success: false,
+        error: "Email delivery is not configured yet. Please email trievolteam@gmail.com directly."
+      });
+      return;
+    }
+
+    const message = [
+      "New Trievol website enquiry",
+      "",
+      `Name: ${name}`,
+      `Organisation: ${company}`,
+      `Email: ${email}`,
+      `Phone: ${phone || "Not provided"}`,
+      `Location: ${location || "Not provided"}`,
+      `Service: ${selectedService}`,
+      `Current website: ${currentUrl || "Not provided"}`,
+      `Goal: ${selectedGoal}`,
+      `Budget: ${selectedBudget}`,
+      `Timeline: ${selectedTimeline}`,
+      "",
+      "Project details:",
+      projectDescription
+    ].join("\n");
+
+    try {
+      await mailer.sendMail({
+        from: gmailUser,
+        to: "trievolteam@gmail.com",
+        replyTo: email,
+        subject: "New Trievol website enquiry",
+        text: message
+      });
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Contact email delivery failed:", error);
+      res.status(502).json({
+        success: false,
+        error: "The enquiry could not be sent. Please try again or email trievolteam@gmail.com directly."
+      });
     }
   });
 

@@ -10,6 +10,7 @@ import About from "./pages/About";
 import Process from "./pages/Process";
 import Pricing from "./pages/Pricing";
 import Contact from "./pages/Contact";
+import { CookiePolicy, PrivacyPolicy, WebsiteTerms } from "./pages/LegalPages";
 
 // Helper component to handle smooth scroll to top on path transitions
 function ScrollToTop() {
@@ -36,6 +37,9 @@ export default function App() {
         <Route path="/process" element={<Layout><Process /></Layout>} />
         <Route path="/pricing" element={<Layout><Pricing /></Layout>} />
         <Route path="/contact" element={<Layout><Contact /></Layout>} />
+        <Route path="/privacy-policy" element={<Layout><PrivacyPolicy /></Layout>} />
+        <Route path="/terms" element={<Layout><WebsiteTerms /></Layout>} />
+        <Route path="/cookie-policy" element={<Layout><CookiePolicy /></Layout>} />
         <Route
           path="*"
           element={
@@ -43,7 +47,7 @@ export default function App() {
               <div className="text-center py-24 space-y-6">
                 <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">404 - Page Not Found</h1>
                 <p className="text-sm text-slate-500 max-w-sm mx-auto">
-                  The premium layout parameters you are trying to view do not exist on this development server.
+                  This page may have moved or the address may be incorrect.
                 </p>
                 <a
                   href="/"

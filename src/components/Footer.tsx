@@ -158,9 +158,9 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] font-mono text-slate-500">
           <div>© 2026 Trievol</div>
           <div className="flex gap-5">
-            <span className="hover:text-slate-400 cursor-pointer">Privacy Policy</span>
-            <span className="hover:text-slate-400 cursor-pointer">Terms</span>
-            <span className="hover:text-slate-400 cursor-pointer">Cookie Policy</span>
+            <Link to="/privacy-policy" className="hover:text-slate-400 transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-slate-400 transition-colors">Terms</Link>
+            <Link to="/cookie-policy" className="hover:text-slate-400 transition-colors">Cookie Policy</Link>
           </div>
         </div>
       </div>

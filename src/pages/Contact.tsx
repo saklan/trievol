@@ -18,7 +18,7 @@ import {
   User, 
   Globe, 
   Calendar, 
-  DollarSign,
+  PoundSterling,
   Phone,
   MapPin,
   MessageSquare,
@@ -37,6 +37,10 @@ import {
   SOCIAL_CHANNELS 
 } from "../data/contactData";
 import AbstractArtwork from "../components/AbstractArtwork";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
 
 export default function Contact() {
   // Step tracker
@@ -61,6 +65,7 @@ export default function Contact() {
 
   // Status & Validation
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [stepError, setStepError] = useState("");
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(0);
 
@@ -113,9 +118,11 @@ export default function Contact() {
     setStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const handleSubmitForm = (e: React.FormEvent) => {
+  const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setStepError("");
+    const formData = new FormData(e.currentTarget);
 
     if (!selectedBudget) {
       setStepError("Please select an indicative budget range.");
@@ -126,8 +133,42 @@ export default function Contact() {
       return;
     }
 
-    // Success Submission - State saved and summary shown
-    setIsSubmitted(true);
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          company,
+          email,
+          phone,
+          location,
+          selectedService,
+          currentUrl,
+          projectDescription,
+          selectedGoal,
+          selectedBudget,
+          selectedTimeline,
+          website: formData.get("website")
+        })
+      });
+      const result: unknown = await response.json();
+
+      if (!response.ok || !isRecord(result) || result.success !== true) {
+        const message = isRecord(result) && typeof result.error === "string"
+          ? result.error
+          : "The enquiry could not be sent. Please try again or email trievolteam@gmail.com directly.";
+        setStepError(message);
+        return;
+      }
+
+      setIsSubmitted(true);
+    } catch {
+      setStepError("The enquiry could not be sent. Please try again or email trievolteam@gmail.com directly.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleResetForm = () => {
@@ -288,7 +329,7 @@ export default function Contact() {
               <div className="space-y-2">
                 <h3 className="text-xl font-bold text-slate-900">Project Strategy Briefing Received Successfully</h3>
                 <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                  Thank you, <strong>{name}</strong>. We will review your project details and follow up by email at <strong>{email}</strong>.
+                  Thank you, <strong>{name}</strong>. Your enquiry was sent to <strong>trievolteam@gmail.com</strong>. I will follow up by email at <strong>{email}</strong>.
                 </p>
               </div>
 
@@ -320,7 +361,7 @@ export default function Contact() {
 
                 {phone && (
                   <div className="text-xs border-t border-slate-200/40 pt-2.5">
-                    <span className="text-slate-400 font-medium block">Consultant Hotline Call:</span>
+                    <span className="text-slate-400 font-medium block">Phone:</span>
                     <span className="text-slate-800 font-bold">{phone} {location && `(Location: ${location})`}</span>
                   </div>
                 )}
@@ -344,6 +385,10 @@ export default function Contact() {
           ) : (
             /* Multi-step Form Content */
             <form onSubmit={handleSubmitForm} className="space-y-6">
+              <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden">
+                <label htmlFor="contact-website">Leave this field empty</label>
+                <input id="contact-website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+              </div>
               
               {/* Header Tab Titles */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 pb-5 gap-4">
@@ -392,7 +437,7 @@ export default function Contact() {
 
               {/* Validation error line */}
               {stepError && (
-                <div className="p-3.5 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl flex items-center gap-2.5 animate-pulse">
+                <div role="alert" aria-live="polite" className="p-3.5 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl flex items-center gap-2.5">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span className="font-semibold">{stepError}</span>
                 </div>
@@ -404,7 +449,7 @@ export default function Contact() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Full Name */}
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">
+                      <label htmlFor="contact-name" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">
                         Full Name *
                       </label>
                       <div className="relative">
@@ -412,6 +457,7 @@ export default function Contact() {
                           <User className="w-4 h-4" />
                         </span>
                         <input
+                          id="contact-name"
                           type="text"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
@@ -424,7 +470,7 @@ export default function Contact() {
 
                     {/* Company Name */}
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">
+                      <label htmlFor="contact-company" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">
                         Company Name *
                       </label>
                       <div className="relative">
@@ -432,10 +478,11 @@ export default function Contact() {
                           <Building className="w-4 h-4" />
                         </span>
                         <input
+                          id="contact-company"
                           type="text"
                           value={company}
                           onChange={(e) => setCompany(e.target.value)}
-                          placeholder="e.g. Vance Corporate Holdings"
+                          placeholder="e.g. Example business"
                           className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-3.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 transition-colors"
                           required
                         />
@@ -446,7 +493,7 @@ export default function Contact() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Email address */}
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">
+                      <label htmlFor="contact-email" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">
                         Email Address *
                       </label>
                       <div className="relative">
@@ -454,10 +501,11 @@ export default function Contact() {
                           <Mail className="w-4 h-4" />
                         </span>
                         <input
+                          id="contact-email"
                           type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          placeholder="e.g. david@vanceholdings.com"
+                          placeholder="e.g. name@example.com"
                           className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-3.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 transition-colors"
                           required
                         />
@@ -466,7 +514,7 @@ export default function Contact() {
 
                     {/* Phone Number (Optional) */}
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">
+                      <label htmlFor="contact-phone" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">
                         Phone Number (Optional)
                       </label>
                       <div className="relative">
@@ -474,10 +522,11 @@ export default function Contact() {
                           <Phone className="w-4 h-4" />
                         </span>
                         <input
+                          id="contact-phone"
                           type="tel"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
-                          placeholder="e.g. +1 (555) 019-2834"
+                          placeholder="e.g. +country code and number"
                           className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-3.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 transition-colors"
                         />
                       </div>
@@ -486,7 +535,7 @@ export default function Contact() {
 
                   {/* Location */}
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">
+                    <label htmlFor="contact-location" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">
                       Business Location / City (Optional)
                     </label>
                     <div className="relative">
@@ -494,10 +543,11 @@ export default function Contact() {
                         <MapPin className="w-4 h-4" />
                       </span>
                       <input
+                        id="contact-location"
                         type="text"
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
-                        placeholder="e.g. Austin, Texas"
+                        placeholder="e.g. City, Country"
                         className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-3.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 transition-colors"
                       />
                     </div>
@@ -521,6 +571,7 @@ export default function Contact() {
                             type="button"
                             key={opt}
                             onClick={() => setSelectedService(opt)}
+                            aria-pressed={isSelected}
                             className={`p-3.5 rounded-xl border text-left text-xs font-semibold transition-all focus:outline-none ${
                               isSelected 
                                 ? "bg-blue-600 text-white border-blue-600 shadow-sm" 
@@ -536,7 +587,7 @@ export default function Contact() {
 
                   {/* Optional current URL */}
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">
+                    <label htmlFor="contact-current-url" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">
                       Current Website URL (Optional)
                     </label>
                     <div className="relative">
@@ -544,6 +595,7 @@ export default function Contact() {
                         <Globe className="w-4 h-4" />
                       </span>
                       <input
+                        id="contact-current-url"
                         type="url"
                         value={currentUrl}
                         onChange={(e) => setCurrentUrl(e.target.value)}
@@ -555,10 +607,11 @@ export default function Contact() {
 
                   {/* Project requirements */}
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">
-                      Tell us about your project requirements *
+                    <label htmlFor="contact-project-details" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">
+                      Tell me about your project requirements *
                     </label>
                     <textarea
+                      id="contact-project-details"
                       value={projectDescription}
                       onChange={(e) => setProjectDescription(e.target.value)}
                       placeholder="Briefly describe what you wish to build, your core audiences, or any current performance barriers you are experiencing."
@@ -581,6 +634,7 @@ export default function Contact() {
                             type="button"
                             key={goal}
                             onClick={() => setSelectedGoal(goal)}
+                            aria-pressed={isSelected}
                             className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all focus:outline-none ${
                               isSelected 
                                 ? "bg-slate-900 text-white border-slate-900 shadow-sm" 
@@ -613,6 +667,7 @@ export default function Contact() {
                             type="button"
                             key={b}
                             onClick={() => setSelectedBudget(b)}
+                            aria-pressed={isSelected}
                             className={`p-3.5 rounded-xl border text-left transition-all flex items-center justify-between focus:outline-none ${
                               isSelected 
                                 ? "bg-blue-600 text-white border-blue-600 shadow-sm font-bold" 
@@ -620,7 +675,7 @@ export default function Contact() {
                             }`}
                           >
                             <span className="text-xs">{b}</span>
-                            <DollarSign className={`w-4 h-4 ${isSelected ? "text-white" : "text-slate-400"}`} />
+                            <PoundSterling className={`w-4 h-4 ${isSelected ? "text-white" : "text-slate-400"}`} />
                           </button>
                         );
                       })}
@@ -640,6 +695,7 @@ export default function Contact() {
                             type="button"
                             key={t}
                             onClick={() => setSelectedTimeline(t)}
+                            aria-pressed={isSelected}
                             className={`p-3.5 rounded-xl border text-center text-xs font-semibold transition-all focus:outline-none ${
                               isSelected 
                                 ? "bg-slate-900 text-white border-slate-900 shadow-sm" 
@@ -684,14 +740,22 @@ export default function Contact() {
                 ) : (
                   <button
                     type="submit"
-                    className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-emerald-500/10"
+                    disabled={isSubmitting}
+                    className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-wait text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-emerald-500/10"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    Send Project Request
+                    {isSubmitting ? "Sending..." : "Send Project Request"}
                   </button>
                 )}
               </div>
 
+              <p className="text-[11px] leading-relaxed text-slate-500">
+                Your enquiry will be emailed to trievolteam@gmail.com. See the{" "}
+                <Link to="/privacy-policy" className="font-semibold text-blue-600 hover:underline">
+                  Privacy Policy
+                </Link>
+                .
+              </p>
             </form>
           )}
 
